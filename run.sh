@@ -1,0 +1,1 @@
+python3 pose_estimation/train.py
