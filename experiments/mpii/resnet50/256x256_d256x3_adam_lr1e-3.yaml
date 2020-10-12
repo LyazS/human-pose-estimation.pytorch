@@ -10,7 +10,7 @@ CUDNN:
   ENABLED: True
 DATASET:
   DATASET: mpii
-  ROOT: 'data/mpii/'
+  ROOT: '/workspace/cpfs-data/datasets/mpii/'
   TEST_SET: valid
   TRAIN_SET: train
   FLIP: true
@@ -44,7 +44,7 @@ MODEL:
 LOSS:
   USE_TARGET_WEIGHT: true
 TRAIN:
-  BATCH_SIZE: 32
+  BATCH_SIZE: 4
   SHUFFLE: true
   BEGIN_EPOCH: 0
   END_EPOCH: 140

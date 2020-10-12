@@ -20,7 +20,7 @@ import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
 import torchvision.transforms as transforms
-from torch.utils.tensorboard import SummaryWriter
+from tensorboardX import SummaryWriter
 
 import _init_paths
 from core.config import config
@@ -43,8 +43,7 @@ def parse_args():
     # general
     parser.add_argument('--cfg',
                         help='experiment configure file name',
-                        required=False,
-                        default="experiments/mpii/resnet50/256x256_d256x3_adam_lr1e-3.yaml",
+                        required=True,
                         type=str)
 
     args, rest = parser.parse_known_args()
@@ -91,7 +90,7 @@ def main():
     torch.backends.cudnn.enabled = config.CUDNN.ENABLED
 
     model = eval('models.'+config.MODEL.NAME+'.get_pose_net')(
-        config, is_train=False
+        config, is_train=True
     )
 
     # copy model file
