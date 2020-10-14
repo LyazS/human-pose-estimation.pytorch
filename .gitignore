@@ -1,4 +1,6 @@
 nms/
+output_dir/*
+final_state.pth.tar
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

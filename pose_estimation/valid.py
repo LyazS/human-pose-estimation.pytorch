@@ -38,7 +38,8 @@ def parse_args():
     # general
     parser.add_argument('--cfg',
                         help='experiment configure file name',
-                        required=True,
+                        required=False,
+                        default="experiments/mpii/resnet50/256x256_d256x3_adam_lr1e-3.yaml",
                         type=str)
 
     args, rest = parser.parse_known_args()
