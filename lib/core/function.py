@@ -21,12 +21,11 @@ from core.inference import get_final_preds
 from utils.transforms import flip_back
 from utils.vis import save_debug_images
 
-
 logger = logging.getLogger(__name__)
 
 
-def train(config, train_loader, model, criterion, optimizer, epoch,
-          output_dir, tb_log_dir, writer_dict):
+def train(config, train_loader, model, criterion, optimizer, epoch, output_dir,
+          tb_log_dir, writer_dict):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -81,13 +80,20 @@ def train(config, train_loader, model, criterion, optimizer, epoch,
             writer.add_scalar('train_acc', acc.val, global_steps)
             writer_dict['train_global_steps'] = global_steps + 1
 
-            prefix = '{}_{}'.format(os.path.join(output_dir, 'train'), i)
-            save_debug_images(config, input, meta, target, pred*4, output,
+            prefix = '{}_{}_{}'.format(os.path.join(output_dir, 'train'),
+                                       epoch, i)
+            save_debug_images(config, input, meta, target, pred * 4, output,
                               prefix)
 
 
-def validate(config, val_loader, val_dataset, model, criterion, output_dir,
-             tb_log_dir, writer_dict=None):
+def validate(config,
+             val_loader,
+             val_dataset,
+             model,
+             criterion,
+             output_dir,
+             tb_log_dir,
+             writer_dict=None):
     batch_time = AverageMeter()
     losses = AverageMeter()
     acc = AverageMeter()
@@ -147,15 +153,16 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
             s = meta['scale'].numpy()
             score = meta['score'].numpy()
 
-            preds, maxvals = get_final_preds(
-                config, output.clone().cpu().numpy(), c, s)
+            preds, maxvals = get_final_preds(config,
+                                             output.clone().cpu().numpy(), c,
+                                             s)
 
             all_preds[idx:idx + num_images, :, 0:2] = preds[:, :, 0:2]
             all_preds[idx:idx + num_images, :, 2:3] = maxvals
             # double check this all_boxes parts
             all_boxes[idx:idx + num_images, 0:2] = c[:, 0:2]
             all_boxes[idx:idx + num_images, 2:4] = s[:, 0:2]
-            all_boxes[idx:idx + num_images, 4] = np.prod(s*200, 1)
+            all_boxes[idx:idx + num_images, 4] = np.prod(s * 200, 1)
             all_boxes[idx:idx + num_images, 5] = score
             image_path.extend(meta['image'])
             if config.DATASET.DATASET == 'posetrack':
@@ -174,12 +181,12 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
                 logger.info(msg)
 
                 prefix = '{}_{}'.format(os.path.join(output_dir, 'val'), i)
-                save_debug_images(config, input, meta, target, pred*4, output,
-                                  prefix)
+                save_debug_images(config, input, meta, target, pred * 4,
+                                  output, prefix)
 
         name_values, perf_indicator = val_dataset.evaluate(
-            config, all_preds, output_dir, all_boxes, image_path,
-            filenames, imgnums)
+            config, all_preds, output_dir, all_boxes, image_path, filenames,
+            imgnums)
 
         _, full_arch_name = get_model_name(config)
         if isinstance(name_values, list):
@@ -208,17 +215,12 @@ def _print_name_value(name_value, full_arch_name):
     names = name_value.keys()
     values = name_value.values()
     num_values = len(name_value)
-    logger.info(
-        '| Arch ' +
-        ' '.join(['| {}'.format(name) for name in names]) +
-        ' |'
-    )
-    logger.info('|---' * (num_values+1) + '|')
-    logger.info(
-        '| ' + full_arch_name + ' ' +
-        ' '.join(['| {:.3f}'.format(value) for value in values]) +
-         ' |'
-    )
+    logger.info('| Arch ' + ' '.join(['| {}'.format(name)
+                                      for name in names]) + ' |')
+    logger.info('|---' * (num_values + 1) + '|')
+    logger.info('| ' + full_arch_name + ' ' +
+                ' '.join(['| {:.3f}'.format(value)
+                          for value in values]) + ' |')
 
 
 class AverageMeter(object):

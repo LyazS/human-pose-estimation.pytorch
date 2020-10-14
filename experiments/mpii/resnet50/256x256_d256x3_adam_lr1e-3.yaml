@@ -45,7 +45,7 @@ LOSS:
   USE_TARGET_WEIGHT: true
 TRAIN:
   BATCH_SIZE: 4
-  SHUFFLE: true
+  SHUFFLE: false
   BEGIN_EPOCH: 0
   END_EPOCH: 140
   RESUME: false

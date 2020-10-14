@@ -83,37 +83,30 @@ def main():
     args = parse_args()
     reset_config(config, args)
 
-    # cudnn related setting
-    cudnn.benchmark = config.CUDNN.BENCHMARK
-    torch.backends.cudnn.deterministic = config.CUDNN.DETERMINISTIC
-    torch.backends.cudnn.enabled = config.CUDNN.ENABLED
-
-    model = eval('models.' + config.MODEL.NAME + '.get_pose_net')(
-        config, is_train=False).to(device)
-
-    gpus = [int(i) for i in config.GPUS.split(',')]
-    # model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
+    model=models.pose_resnet.get_pose_net2().to(device)
 
     # define loss function (criterion) and optimizer
-    criterion = JointsMSELoss(
-        use_target_weight=config.LOSS.USE_TARGET_WEIGHT).cuda()
+    criterion = JointsMSELoss(use_target_weight=True).cuda()
 
-    optimizer = get_optimizer(config, model)
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=0.001,
+    )
 
     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
-        optimizer, config.TRAIN.LR_STEP, config.TRAIN.LR_FACTOR)
+        optimizer, [90,120], 0.1)
 
     # Data loading code
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
-    train_dataset = eval('dataset.' + config.DATASET.DATASET)(
-        config, config.DATASET.ROOT, config.DATASET.TRAIN_SET, True,
+    train_dataset = dataset.mpii(
+        config, '/workspace/cpfs-data/datasets/mpii/', "train", True,
         transforms.Compose([
             transforms.ToTensor(),
             normalize,
         ]))
-    valid_dataset = eval('dataset.' + config.DATASET.DATASET)(
-        config, config.DATASET.ROOT, config.DATASET.TEST_SET, False,
+    valid_dataset = dataset.mpii(
+        config, '/workspace/cpfs-data/datasets/mpii/', "valid", False,
         transforms.Compose([
             transforms.ToTensor(),
             normalize,
@@ -121,20 +114,20 @@ def main():
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
-        batch_size=config.TRAIN.BATCH_SIZE * len(gpus),
-        shuffle=config.TRAIN.SHUFFLE,
-        num_workers=config.WORKERS,
+        batch_size=4,
+        shuffle=True,
+        num_workers=0,
         pin_memory=True)
     valid_loader = torch.utils.data.DataLoader(
         valid_dataset,
-        batch_size=config.TEST.BATCH_SIZE * len(gpus),
+        batch_size=4,
         shuffle=False,
-        num_workers=config.WORKERS,
+        num_workers=0,
         pin_memory=True)
 
     best_perf = 0.0
     best_model = False
-    for epoch in range(config.TRAIN.BEGIN_EPOCH, config.TRAIN.END_EPOCH):
+    for epoch in range(140):
         for i, (input, target, target_weight,
                 meta) in tqdm(enumerate(train_loader),
                               total=train_loader.__len__(),
@@ -152,10 +145,11 @@ def main():
             loss.backward()
             optimizer.step()
 
-            if i % config.PRINT_FREQ == 0:
+            if i % 300 == 0:
                 _, avg_acc, cnt, pred = accuracy(output.detach().cpu().numpy(),
                                                  target.detach().cpu().numpy())
-                prefix = '{}_{}_{}'.format(os.path.join("output_dir", 'train'),epoch, i)
+                prefix = '{}_{}_{}'.format(os.path.join("output_dir", 'train'),
+                                           epoch, i)
                 save_debug_images(config, input, meta, target, pred * 4,
                                   output, prefix)
         lr_scheduler.step()
